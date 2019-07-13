@@ -1,0 +1,140 @@
+---
+title: "Reproducible Research-Week 2"
+output: html_document
+date: "7/13/2019"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview of tasks and files
+
+Task: Our objective will be to analyzie the total, mean and median number of steps taken per day from October-November 2012. We will be plotting the average number of steps taken per 5 minute interval and evaluating the max. We will be imputing missing step data based on the average step data for the intervals and evaluating the average number of steps taken between weekdays and weekends. 
+
+files needed:  
+
+- zip file titled: [repdata_data_activity.zip](repdata_data_activity.zip)
+- R markdown file: reprodresearch_wk2.Rmd
+
+## Unzip raw data for analysis
+- Expect 17568 observations with 3 variables (steps, date, interval)
+
+```{r}
+getwd()
+actz<-unzip("repdata_data_activity.zip")
+act<-read.csv(actz)
+rm(actz)
+
+head(act)
+act1<-na.omit(act)
+act1$date<- as.Date(act1$date)
+```
+
+##Calculate the total number of steps taken per day, visualize and summarize
+- generate data
+- histogram
+- mean median summary statistics
+
+```{r}
+library(dplyr)
+#generate data
+totstep<-act1 %>%
+    group_by(date) %>%
+    summarize(tot=sum(steps))
+
+#Histogram
+hist(totstep$tot, xlab="Total number of steps", ylab="count", 
+        main="Total steps taken per day", col="blue")
+
+#mean and median
+  mnstep<-mean(totstep$tot)
+  mdstep<-median(totstep$tot)
+  print(mnstep)
+  print(mdstep)
+```
+
+#Time series plot of average number of steps taken
+- generate summary data
+- plot the average septs taken per 5 minute interval
+- max average steps per interval
+
+```{r}
+#generate summary data
+  intvave<- act1 %>%
+      group_by(interval) %>%
+      summarize(avestep=mean(steps))
+
+#plot
+  plot(intvave$interval, intvave$avestep, type="l", 
+       xlab="interval", 
+       ylab="average", 
+       main="Average steps taken per 5 minute interval")
+  
+#max steps  
+  maxstep<-intvave$interval[which.max(intvave$avestep)]
+  print(maxstep)
+```
+  
+##Impute missing step data then visualize and run crude summaries
+  - impute first
+  - histogram of total number of steps per day after imputation
+  - mean and median number of steps taken each day after imputation
+  
+```{r}
+#impute
+  actimp<-act
+  for (i in 1:nrow(actimp)){
+      if (is.na(actimp$steps[i])) {
+        int<-which(actimp$interval[i] == intvave$interval)
+        actimp$steps[i]<-intvave[int,]$avestep
+      }
+  }
+#format date
+  actimp$date <- as.Date(actimp$date)
+  
+#summarize data  
+  totstepi<-actimp %>%
+    group_by(date) %>%
+    summarize(tot=sum(steps))
+  
+#histogram  
+  hist(totstepi$tot, xlab="Total number of steps", ylab="count", 
+       main="Total steps per day after imputation", col="blue")
+
+#mean and median number of steps  
+  mnstepi<-mean(totstepi$tot)
+  mdstepi<-median(totstepi$tot)
+  print(mnstepi)
+  print(mdstepi)
+```
+
+#Panel plot comparing average # of steps taken per 5 minute interval across weekdays and weekend
+  - generate data
+  - classify steps as weekday or weekend
+  - panel plot comparing average steps between weekdays and weekends
+
+```{r}
+#generate data
+  actimp$day<-weekdays(actimp$date)
+  actimp$daytype<-"weekday"
+  actimp$daytype[actimp$day %in% c("Saturday","Sunday")]<-"weekend"
+  
+#classify steps
+  stepsd<-actimp %>%
+    group_by(daytype, interval) %>%
+    summarize(avestep=mean(steps))
+  
+#panel plot
+  library(ggplot2)
+  qplot(interval,avestep, data=stepsd,
+        type="l",
+        geom="line",
+        xlab="interval",
+        ylab="Average No. Steps",
+        main="Average steps per interval for weekdays and weekend",
+        facets=daytype~.)
+```
+
+Note: more steps taken in earlier part of weekday as compared to weekend  
+  
