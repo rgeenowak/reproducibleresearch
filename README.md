@@ -6,5 +6,5 @@ Our objective will be to analyzie the total, mean and median number of steps tak
  
 Files needed:
 
--zip file titled: repdata_data_activity.zip  
--R markdown file: reprodresearch_wk2.Rmd
+- zip file titled: repdata_data_activity.zip  
+- R markdown file: reprodresearch_wk2.Rmd
